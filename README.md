@@ -284,3 +284,145 @@ At `SERIALIZABLE` level, one of these transactions would be rolled back to preve
 - For high-performance systems, **Read Committed** is often enough with careful design.
 
 ---
+
+
+# 🔒 Transaction Isolation Levels: PostgreSQL vs MySQL (InnoDB)
+
+This document explains how **PostgreSQL** and **MySQL (InnoDB)** handle transaction isolation levels, and the key differences you should be aware of when designing applications such as financial systems.
+
+---
+
+## 📖 SQL Standard Isolation Levels
+
+The SQL standard defines **4 isolation levels**, each preventing more anomalies:
+
+| Isolation Level     | Prevents Dirty Reads | Prevents Non-Repeatable Reads | Prevents Phantom Reads |
+|---------------------|----------------------|-------------------------------|------------------------|
+| **Read Uncommitted** | ❌                  | ❌                            | ❌                     |
+| **Read Committed**   | ✅                  | ❌                            | ❌                     |
+| **Repeatable Read**  | ✅                  | ✅                            | ❌                     |
+| **Serializable**     | ✅                  | ✅                            | ✅                     |
+
+---
+
+## 🐘 PostgreSQL
+
+### Default: `READ COMMITTED`
+- Each statement sees a **snapshot** of committed data at the time the statement starts.  
+- No dirty reads.  
+- Non-repeatable reads are possible.  
+- Phantom reads are possible.
+
+### `REPEATABLE READ`
+- Transaction sees a **consistent snapshot** for its entire lifetime.  
+- Prevents non-repeatable reads.  
+- Prevents most phantom reads.  
+- If concurrent transactions would cause anomalies, PostgreSQL **aborts one with a serialization error**.
+
+### `SERIALIZABLE`
+- Strongest level.  
+- Implemented via **Serializable Snapshot Isolation (SSI)**.  
+- Detects conflicts dynamically.  
+- If anomalies would occur, one transaction is **rolled back** with an error:  
+  - `could not serialize access due to read/write dependencies`  
+- Applications must implement **retry logic**.
+
+👉 PostgreSQL **never allows dirty reads**, even at `READ UNCOMMITTED`.
+
+---
+
+## 🐬 MySQL (InnoDB)
+
+### Default: `REPEATABLE READ`
+- Stronger than PostgreSQL’s Repeatable Read.  
+- Uses **MVCC + gap locks (next-key locks)**.  
+- Prevents dirty reads.  
+- Prevents non-repeatable reads.  
+- Prevents phantom reads by **locking ranges**.  
+- Effectively behaves like **Serializable** in PostgreSQL, but via locking instead of aborting.
+
+### `READ COMMITTED`
+- Each statement reads the latest committed snapshot.  
+- Non-repeatable reads possible.  
+- Phantom reads prevented only with explicit locking reads (`SELECT ... FOR UPDATE`).
+
+### `SERIALIZABLE`
+- Upgrades all plain `SELECT` into `SELECT ... LOCK IN SHARE MODE`.  
+- Strongest, but increases contention.  
+- Rarely needed because InnoDB’s `REPEATABLE READ` is already strict.
+
+---
+
+## ⚖️ Key Differences
+
+| Feature / Phenomenon | PostgreSQL | MySQL (InnoDB) |
+|-----------------------|------------|----------------|
+| **Default isolation** | Read Committed | Repeatable Read |
+| **Dirty reads** | Never allowed | Never allowed |
+| **Repeatable Read** | Snapshot isolation, phantoms possible (may abort txn) | MVCC + gap locks, prevents phantoms |
+| **Serializable** | SSI (detect conflicts, abort txns) | SELECTs take shared locks (heavier blocking) |
+| **Deadlocks** | Possible, resolved by aborting one txn | Possible, resolved by deadlock detector |
+
+---
+
+## ✅ Practical Implications
+
+- **PostgreSQL**
+  - Use `SERIALIZABLE` for financial safety.  
+  - Must add **retry logic** for serialization errors.  
+  - Example error messages:
+    - `could not serialize access due to concurrent update`
+    - `deadlock detected`
+
+- **MySQL**
+  - Default `REPEATABLE READ` is already strong and prevents phantoms.  
+  - Less need for retries, but **more blocking** due to gap locks.  
+  - Can reduce contention by using `READ COMMITTED` + explicit locks.
+
+---
+
+## 🔎 Example: Phantom Reads
+
+Suppose two transactions run concurrently:
+
+**Transaction A (Bank Report):**
+```sql
+SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+BEGIN;
+SELECT COUNT(*) FROM accounts WHERE balance > 1000;
+-- Suppose result = 5
+```
+
+**Transaction B (Insert new account):**
+```sql
+SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+BEGIN;
+INSERT INTO accounts (owner, balance) VALUES ('new_user', 2000);
+COMMIT;
+```
+
+### In PostgreSQL (Repeatable Read):
+
+Transaction A will still see 5, not 6, because it’s locked into its snapshot.
+
+If A later performs conflicting actions, it may get a serialization failure when committing.
+
+### In MySQL (InnoDB Repeatable Read):
+
+Transaction A might block or prevent Transaction B from inserting into the range, because of gap locks.
+
+No phantom rows will appear, but higher contention is possible.
+
+## 💡Summary
+
+PostgreSQL prefers optimistic concurrency (abort + retry).
+
+MySQL prefers pessimistic concurrency (lock + block).
+
+Both approaches avoid anomalies, but require different handling.
+
+👉 In financial systems:
+
+PostgreSQL: Use SERIALIZABLE + retries.
+
+MySQL: Default REPEATABLE READ is safe, but expect more blocking.
