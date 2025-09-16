@@ -43,3 +43,13 @@ Commands:
 ## to create migration file
 - note that -seq is to create sequential init_schema is the name of file
 > migrate create -ext sql -dir internal/database/migrations -seq init_schema
+
+# Sqlc in golang
+
+## Installation
+
+> brew install sqlc
+
+> sqlc version
+
+> sqlc init
