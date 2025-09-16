@@ -1,0 +1,56 @@
+# =========================
+# Binaries & build artifacts
+# =========================
+bin/
+build/
+dist/
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go cache & modules
+vendor/
+
+# =========================
+# Logs
+# =========================
+*.log
+log/
+logs/
+
+# =========================
+# Environment & configs
+# =========================
+.env
+.env.local
+.env.*.local
+
+# keep safe template
+!.env.example
+
+# =========================
+# VCS
+# =========================
+.git
+.gitignore
+.gitattributes
+
+# =========================
+# IDE / Editor junk
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# =========================
+# Docker specific
+# =========================
+.dockerignore
+docker-compose.override.yml
