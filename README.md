@@ -124,3 +124,163 @@ It’s common to catch the `deadlock detected` error and retry the transaction a
 - Deadlocks occur when transactions wait on each other’s locks.  
 - PostgreSQL resolves this by aborting one of them.  
 - Use **consistent lock ordering**, keep transactions short, and **retry on deadlock** to ensure safe and reliable transfers.
+
+# Transaction Isolation Levels & Read Phenomena
+
+## Introduction
+Database transactions allow multiple operations to be executed as a single **atomic** unit.  
+However, when multiple transactions run concurrently, they can **interfere** with each other, leading to inconsistent or unexpected results.
+
+To control this, relational databases provide **isolation levels**.  
+Isolation levels determine **how visible changes made by one transaction are to others** before they are committed.
+
+---
+
+## Read Phenomena (Concurrency Anomalies)
+
+### 1. Dirty Read
+- **Definition**: Reading uncommitted data from another transaction.
+
+**SQL Example** (works in databases that allow dirty reads, e.g., SQL Server with `READ UNCOMMITTED`. PostgreSQL does NOT allow dirty reads at all):
+
+```sql
+-- Transaction A
+BEGIN;
+UPDATE accounts SET balance = balance + 100 WHERE id = 1;
+
+-- Transaction B (with READ UNCOMMITTED in some DBs)
+SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+SELECT balance FROM accounts WHERE id = 1;  -- Sees uncommitted update!
+```
+
+If Transaction A rolls back, B has read a value that never existed.
+
+---
+
+### 2. Non-Repeatable Read
+- **Definition**: Reading the same row twice in the same transaction returns different values.
+
+**SQL Example** (`READ COMMITTED`):
+
+```sql
+-- Transaction A
+BEGIN;
+SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+SELECT balance FROM accounts WHERE id = 1;  -- returns 100
+
+-- Transaction B
+BEGIN;
+UPDATE accounts SET balance = 200 WHERE id = 1;
+COMMIT;
+
+-- Back to Transaction A
+SELECT balance FROM accounts WHERE id = 1;  -- returns 200 now (changed)
+COMMIT;
+```
+
+---
+
+### 3. Phantom Read
+- **Definition**: Re-running a query returns different sets of rows due to inserts/updates/deletes by another transaction.
+
+**SQL Example** (`READ COMMITTED` or `REPEATABLE READ` in MySQL):
+
+```sql
+-- Transaction A
+BEGIN;
+SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+SELECT * FROM orders WHERE amount > 100;  
+-- returns 3 rows
+
+-- Transaction B
+BEGIN;
+INSERT INTO orders (id, amount) VALUES (999, 150);
+COMMIT;
+
+-- Back to Transaction A
+SELECT * FROM orders WHERE amount > 100;  
+-- returns 4 rows (phantom row appears)
+COMMIT;
+```
+
+PostgreSQL `REPEATABLE READ` prevents this because it uses a **consistent snapshot**.
+
+---
+
+### 4. Serialization Anomaly
+- **Definition**: Concurrent execution produces a result that couldn’t happen if transactions ran one after another.
+
+**SQL Example** (`READ COMMITTED`):
+
+```sql
+-- Assume account 1 has balance = 100
+
+-- Transaction A
+BEGIN;
+SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+SELECT balance FROM accounts WHERE id = 1;  -- sees 100
+-- decides to withdraw 100
+UPDATE accounts SET balance = balance - 100 WHERE id = 1;
+
+-- Transaction B (concurrent)
+BEGIN;
+SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+SELECT balance FROM accounts WHERE id = 1;  -- also sees 100
+-- decides to withdraw 100
+UPDATE accounts SET balance = balance - 100 WHERE id = 1;
+
+-- Both commit → Final balance = -100 (impossible in serial execution)
+```
+
+At `SERIALIZABLE` level, one of these transactions would be rolled back to prevent inconsistency.
+
+---
+
+## ANSI SQL Isolation Levels
+
+| Isolation Level      | Dirty Reads | Non-Repeatable Reads | Phantom Reads | Notes |
+|----------------------|-------------|----------------------|---------------|-------|
+| **Read Uncommitted** | Possible    | Possible             | Possible      | Fastest, lowest safety. Rarely used. |
+| **Read Committed**   | Prevented   | Possible             | Possible      | Default in PostgreSQL, Oracle. |
+| **Repeatable Read**  | Prevented   | Prevented            | Possible*     | Default in MySQL InnoDB. (*Postgres eliminates phantoms here.) |
+| **Serializable**     | Prevented   | Prevented            | Prevented     | Strongest, ensures full serial execution equivalence. |
+
+---
+
+## PostgreSQL Notes
+- **Read Committed** (default): Each statement sees only committed data at the start of execution.
+- **Repeatable Read**: Prevents non-repeatable reads and phantoms; queries see a consistent snapshot.
+- **Serializable**: Uses **Serializable Snapshot Isolation (SSI)**. If anomalies could occur, one transaction is aborted.
+
+---
+
+## Choosing an Isolation Level
+
+- **Read Uncommitted**: Almost never recommended.
+- **Read Committed**: Good balance of performance and correctness for most OLTP workloads.
+- **Repeatable Read**: Safer for reporting, analytics, and financial calculations.
+- **Serializable**: Use when correctness is critical and anomalies cannot be tolerated (e.g., money transfers, inventory management). Be prepared for **retries**.
+
+---
+
+## Example: Bank Transfer (Deadlock & Isolation)
+
+- **Scenario**: 
+  - T1: Transfer $100 from Account A → B.
+  - T2: Transfer $50 from Account B → A.
+
+- If both update rows in opposite order, a **deadlock** may occur.
+- If running at lower isolation levels, anomalies may cause **double spending**.
+- Recommended: 
+  - Use **Repeatable Read** or **Serializable**.
+  - Implement **retry logic** on deadlock/serialization errors.
+
+---
+
+## Summary
+- **Isolation levels** balance between **performance** and **consistency**.
+- Always understand which **read phenomena** your application can tolerate.
+- For critical systems (like finance), use **Serializable** with retries.
+- For high-performance systems, **Read Committed** is often enough with careful design.
+
+---
