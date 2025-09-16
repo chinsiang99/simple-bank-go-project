@@ -53,3 +53,6 @@ Commands:
 > sqlc version
 
 > sqlc init
+
+# Database Design
+![ERD Diagram](docs/erd-diagram.png)
