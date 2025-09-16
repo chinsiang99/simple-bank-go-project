@@ -426,3 +426,53 @@ Both approaches avoid anomalies, but require different handling.
 PostgreSQL: Use SERIALIZABLE + retries.
 
 MySQL: Default REPEATABLE READ is safe, but expect more blocking.
+
+# Choosing the Right Transaction Isolation Level
+
+Databases provide multiple isolation levels to balance **consistency** and **concurrency**.  
+Choosing the right one depends on your use case.
+
+---
+
+## 🔹 READ COMMITTED (Default in PostgreSQL)
+- **Guarantees:** No dirty reads.
+- **Allows:** Non-repeatable reads, phantom reads.
+- **Best for:**  
+  - High-concurrency systems (web apps, APIs).  
+  - Reporting queries where data may change frequently.  
+  - Workloads where small inconsistencies are acceptable.
+
+✅ Example: E-commerce users browsing product inventory, or analytics dashboards.
+
+---
+
+## 🔹 REPEATABLE READ (Default in MySQL InnoDB)
+- **Guarantees:** No dirty reads, no non-repeatable reads.  
+- **Allows:** Phantom reads (in PostgreSQL, even phantoms are prevented).  
+- **Best for:**  
+  - When queries within the same transaction should always return the same results.  
+  - Business logic that depends on stable snapshots.  
+
+✅ Example: A user checks their account balance multiple times during a transaction and must always see the same value.
+
+---
+
+## 🔹 SERIALIZABLE
+- **Guarantees:** Full serializability (transactions behave as if run one by one).  
+- **Allows:** Nothing (strongest isolation).  
+- **Best for:**  
+  - Financial transfers, ledger consistency, or anything that must avoid anomalies.  
+  - Ensuring correctness is more important than raw performance.  
+
+⚠️ Downside: More chance of blocking, deadlocks, or retries.
+
+✅ Example: Bank transfer between two accounts (to avoid double spending).
+
+---
+
+## 📝 Recommendation
+- Use **READ COMMITTED** for general reads and reporting queries.  
+- Use **REPEATABLE READ** when stable views of data matter (e.g., analytical workflows).  
+- Use **SERIALIZABLE** for **critical financial transactions** (with retry logic for deadlocks).  
+
+This hybrid approach keeps the system safe **without sacrificing performance**.
