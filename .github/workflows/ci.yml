@@ -14,6 +14,26 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+
+    # to define external services
+    # Service containers to run with `container-job`
+    services:
+      # Label used to access the service container
+      postgres:
+        # Docker Hub image
+        image: postgres:17.6-alpine
+        # Provide the password for postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: chinsiang
+          POSTGRES_DB: go-project
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
     - name: Set up Go
       uses: actions/setup-go@v4
@@ -23,6 +43,8 @@ jobs:
     - name: Check out code into the go module repository
       uses: actions/checkout@v4
 
+    - name: Run migrations
+      run: make migrate-up
 
     # - name: Build
     #   run: go build -v ./...
