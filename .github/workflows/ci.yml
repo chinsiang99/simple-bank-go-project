@@ -24,7 +24,7 @@ jobs:
         image: postgres:17.6-alpine
         # Provide the password for postgres
         env:
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_PASSWORD: chinsiang
           POSTGRES_USER: chinsiang
           POSTGRES_DB: go-project
         ports:
