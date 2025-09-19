@@ -14,6 +14,7 @@ import (
 
 type IAccountHandler interface {
 	CreateAccount(c *gin.Context)
+	GetAccount(c *gin.Context)
 	// GetUserByID(c *gin.Context)
 	// GetAllUsers(c *gin.Context)
 	// UpdateUser(c *gin.Context)
@@ -61,6 +62,37 @@ func (handler *accountHandler) CreateAccount(ctx *gin.Context) {
 	if err != nil {
 		ctx.Error(err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create account"})
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, gin.H{"data": account})
+}
+
+// GetAccount godoc
+// @Summary Get account by ID
+// @Description Retrieve account details by account ID
+// @Tags accounts
+// @Accept json
+// @Produce json
+// @Param id path int true "Account ID"
+// @Success 200 {object} db.Account
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /accounts/{id} [get]
+func (handler *accountHandler) GetAccount(ctx *gin.Context) {
+	var req dto.GetAccountRequest
+	// var req models.CreateUserRequest
+	if err := ctx.ShouldBindUri(&req); err != nil {
+		ctx.Error(err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	account, err := handler.service.GetAccount(ctx, req.ID)
+	if err != nil {
+		ctx.Error(err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get account"})
 		return
 	}
 

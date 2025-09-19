@@ -15,6 +15,7 @@ type IAccountService interface {
 	// UpdateUser(user *models.User) error
 	// DeleteUser(id uint) error
 	CreateAccount(ctx context.Context, req dto.CreateAccountRequest) (db.Account, error)
+	GetAccount(ctx context.Context, id int64) (db.Account, error)
 }
 
 type accountService struct {
@@ -32,6 +33,11 @@ func (s *accountService) CreateAccount(ctx context.Context, req dto.CreateAccoun
 		Balance:  0,
 	}
 	account, err := s.store.CreateAccount(ctx, arg)
+	return account, err
+}
+
+func (s *accountService) GetAccount(ctx context.Context, id int64) (db.Account, error) {
+	account, err := s.store.GetAccount(ctx, id)
 	return account, err
 }
 
