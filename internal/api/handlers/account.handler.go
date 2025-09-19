@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"net/http"
 
 	"github.com/chinsiang99/simple-bank-go-project/internal/dto"
@@ -91,6 +92,10 @@ func (handler *accountHandler) GetAccount(ctx *gin.Context) {
 
 	account, err := handler.service.GetAccount(ctx, req.ID)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "account not found"})
+			return
+		}
 		ctx.Error(err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get account"})
 		return
