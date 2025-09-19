@@ -1,17 +1,21 @@
 package services
 
-import "github.com/chinsiang99/simple-bank-go-project/internal/repositories"
+import (
+	db "github.com/chinsiang99/simple-bank-go-project/internal/database/sqlc"
+)
 
 type ServiceManager struct {
-	AuthService *AuthService
-	UserService IUserService
+	// AuthService    IAuthService
+	// UserService    IUserService
+	AccountService IAccountService
 	// TicketService *TicketService
 }
 
-func NewServiceManager(repositories *repositories.RepositoryManager) *ServiceManager {
+func NewServiceManager(store *db.Store) *ServiceManager {
 	return &ServiceManager{
-		AuthService: NewAuthService(repositories),
-		UserService: NewUserService(repositories.UserRepository),
+		// AuthService:    NewAuthService(store),
+		// UserService:    NewUserService(store),
+		AccountService: NewAccountService(store),
 		// TicketService: NewTicketService(repositories),
 	}
 }

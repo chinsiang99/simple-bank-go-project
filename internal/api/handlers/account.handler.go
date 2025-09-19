@@ -1,6 +1,10 @@
 package handlers
 
 import (
+	"net/http"
+
+	"github.com/chinsiang99/simple-bank-go-project/internal/dto"
+	"github.com/chinsiang99/simple-bank-go-project/internal/services"
 	"github.com/gin-gonic/gin"
 )
 
@@ -8,72 +12,60 @@ import (
 // Interface
 // -------------------------------
 
-type IUserHandler interface {
-	CreateUser(c *gin.Context)
-	GetUserByID(c *gin.Context)
-	GetAllUsers(c *gin.Context)
-	UpdateUser(c *gin.Context)
-	DeleteUser(c *gin.Context)
+type IAccountHandler interface {
+	CreateAccount(c *gin.Context)
+	// GetUserByID(c *gin.Context)
+	// GetAllUsers(c *gin.Context)
+	// UpdateUser(c *gin.Context)
+	// DeleteUser(c *gin.Context)
 }
 
 // -------------------------------
 // Implementation
 // -------------------------------
 
-// type userHandler struct {
-// 	service services.IUserService
-// }
+type accountHandler struct {
+	service services.IAccountService
+}
 
-// // Constructor (DI)
-// func NewUserHandler(service services.IUserService) IUserHandler {
-// 	return &userHandler{service: service}
-// }
+// Constructor (DI)
+func NewAccountHandler(service services.IAccountService) IAccountHandler {
+	return &accountHandler{service: service}
+}
 
-// // -------------------------------
-// // Handler methods with Swagger Docs
-// // -------------------------------
+// -------------------------------
+// Handler methods with Swagger Docs
+// -------------------------------
 
-// // CreateUser godoc
-// // @Summary Create a new user
-// // @Description Create a new user with name, email, and password
-// // @Tags users
-// // @Accept json
-// // @Produce json
-// // @Param user body models.CreateUserRequest true "User info"
-// // @Success 201 {object} models.UserResponse
-// // @Failure 400 {object} map[string]string
-// // @Failure 500 {object} map[string]string
-// // @Router /users [post]
-// func (h *userHandler) CreateUser(c *gin.Context) {
-// 	var req models.CreateUserRequest
-// 	if err := c.ShouldBindJSON(&req); err != nil {
-// 		c.Error(err)
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-// 		return
-// 	}
+// CreateAccount godoc
+// @Summary Create a new account
+// @Description Create a new bank account with owner and currency
+// @Tags accounts
+// @Accept json
+// @Produce json
+// @Param account body dto.CreateAccountRequest true "Account info"
+// @Success 201 {object} db.Account
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /accounts [post]
+func (handler *accountHandler) CreateAccount(ctx *gin.Context) {
+	var req dto.CreateAccountRequest
+	// var req models.CreateUserRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.Error(err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-// 	user := models.User{
-// 		Name:     req.Name,
-// 		Email:    req.Email,
-// 		Password: req.Password, // TODO: hash this before saving
-// 	}
+	account, err := handler.service.CreateAccount(ctx, req)
+	if err != nil {
+		ctx.Error(err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create account"})
+		return
+	}
 
-// 	if err := h.service.CreateUser(&user); err != nil {
-// 		c.Error(err)
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})
-// 		return
-// 	}
-
-// 	resp := models.UserResponse{
-// 		ID:        user.ID,
-// 		Name:      user.Name,
-// 		Email:     user.Email,
-// 		CreatedAt: user.CreatedAt.Format(time.RFC3339),
-// 		UpdatedAt: user.UpdatedAt.Format(time.RFC3339),
-// 	}
-
-// 	c.JSON(http.StatusCreated, resp)
-// }
+	ctx.JSON(http.StatusCreated, gin.H{"data": account})
+}
 
 // // GetUserByID godoc
 // // @Summary Get a user by ID

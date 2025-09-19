@@ -38,10 +38,11 @@ func NewRouterManager(handlers *handlers.HandlerManager, appConfig *config.AppCo
 		router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, url))
 	}
 
-	RegisterAuthRoutes(router, handlers.AuthHandler)
+	// RegisterAuthRoutes(router, handlers.AuthHandler)
 	RegisterAppRoutes(router)
-	RegisterUserRoutes(router, handlers.UserHandler)
+	// RegisterUserRoutes(router, handlers.UserHandler)
 	// RegisterTicketRoutes(router, h.TicketHandler)
+	RegisterAccountRoutes(router, handlers.AccountHandler)
 
 	return router
 }

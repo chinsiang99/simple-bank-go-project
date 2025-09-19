@@ -1,75 +1,30 @@
 basePath: /api/v1
 definitions:
-  models.CreateUserRequest:
+  db.Account:
     properties:
-      email:
-        description: |-
-          User's email (must be unique)
-          required: true
-          example: johndoe@example.com
-        type: string
-      name:
-        description: |-
-          User's full name
-          required: true
-          example: John Doe
-        type: string
-      password:
-        description: |-
-          User's password (will be hashed before saving)
-          required: true
-          example: password123
-        type: string
-    required:
-    - email
-    - name
-    - password
-    type: object
-  models.UpdateUserRequest:
-    properties:
-      email:
-        description: |-
-          User's email
-          example: johndoe@example.com
-        type: string
-      name:
-        description: |-
-          User's full name
-          example: John Doe
-        type: string
-      password:
-        description: |-
-          User's password
-          example: newpassword123
-        type: string
-    type: object
-  models.UserResponse:
-    properties:
+      balance:
+        type: integer
       created_at:
-        description: |-
-          Timestamp when user was created
-          example: 2025-09-06T12:34:56Z
         type: string
-      email:
-        description: |-
-          User's email
-          example: johndoe@example.com
+      currency:
         type: string
       id:
-        description: |-
-          User ID
-          example: 1
         type: integer
-      name:
-        description: |-
-          User's full name
-          example: John Doe
+      owner:
         type: string
-      updated_at:
-        description: |-
-          Timestamp when user was last updated
-          example: 2025-09-06T12:34:56Z
+    type: object
+  dto.CreateAccountRequest:
+    properties:
+      currency:
+        enum:
+        - USD
+        - EUR
         type: string
+      owner:
+        type: string
+    required:
+    - currency
+    - owner
     type: object
 host: localhost:8080
 info:
@@ -78,45 +33,25 @@ info:
   title: github.com/simple-go-project API
   version: "1.0"
 paths:
-  /users:
-    get:
-      description: Get a list of all users
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/models.UserResponse'
-            type: array
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Get all users
-      tags:
-      - users
+  /accounts:
     post:
       consumes:
       - application/json
-      description: Create a new user with name, email, and password
+      description: Create a new bank account with owner and currency
       parameters:
-      - description: User info
+      - description: Account info
         in: body
-        name: user
+        name: account
         required: true
         schema:
-          $ref: '#/definitions/models.CreateUserRequest'
+          $ref: '#/definitions/dto.CreateAccountRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/models.UserResponse'
+            $ref: '#/definitions/db.Account'
         "400":
           description: Bad Request
           schema:
@@ -129,110 +64,9 @@ paths:
             additionalProperties:
               type: string
             type: object
-      summary: Create a new user
+      summary: Create a new account
       tags:
-      - users
-  /users/{id}:
-    delete:
-      description: Delete a user by their ID
-      parameters:
-      - description: User ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Delete a user
-      tags:
-      - users
-    get:
-      description: Get details of a user by their ID
-      parameters:
-      - description: User ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.UserResponse'
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Get a user by ID
-      tags:
-      - users
-    put:
-      consumes:
-      - application/json
-      description: Update user details by ID
-      parameters:
-      - description: User ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Updated user info
-        in: body
-        name: user
-        required: true
-        schema:
-          $ref: '#/definitions/models.UpdateUserRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.UserResponse'
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Update a user
-      tags:
-      - users
+      - accounts
 securityDefinitions:
   BearerAuth:
     description: Type "Bearer" followed by a space and JWT token.

@@ -476,3 +476,7 @@ Choosing the right one depends on your use case.
 - Use **SERIALIZABLE** for **critical financial transactions** (with retry logic for deadlocks).  
 
 This hybrid approach keeps the system safe **without sacrificing performance**.
+
+# Gin Framwork
+
+> go get -u github.com/gin-gonic/gin
