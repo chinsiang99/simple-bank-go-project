@@ -23,16 +23,38 @@
 #         out: "tutorial"
 #         sql_package: "pgx/v5"
 
-version: "2"
+version: "2"  # ✅ Version of the sqlc config format. Currently v2 is recommended.
+
 sql:
-  - schema: "internal/database/migrations"   # Path to your migrations (CREATE TABLE, etc.)
-    queries: "internal/database/queries"     # Path to your .sql query files
-    engine: "postgresql"                     # Database engine
+  - schema: "internal/database/migrations"   # ✅ Path to your migration files (schema.sql, or migration .sql files).
+                                              # sqlc reads this to understand your DB schema (tables, columns, types).
+
+    queries: "internal/database/queries"     # ✅ Path to your .sql files that contain custom queries (SELECT, INSERT, etc.).
+                                              # sqlc parses them and generates Go functions.
+
+    engine: "postgresql"                     # ✅ Database engine. Can be: postgresql, mysql, sqlite, sqlserver.
+
     gen:
       go:
-        package: "db"                        # Go package name for generated code
-        out: "internal/database/sqlc"        # Output folder for generated Go files
-        emit_json_tags: true
-        emit_prepared_queries: true
-        emit_interface: true
-        emit_exact_table_names: false
+        package: "db"                        # ✅ Package name for generated Go code (e.g., `package db`).
+                                              # This is what you’ll import in your service layer.
+
+        out: "internal/database/sqlc"        # ✅ Output directory where generated Go files will be written.
+
+        emit_json_tags: true                 # ✅ Adds `json:"field_name"` struct tags to generated Go structs.
+                                              # Useful for marshalling results to JSON in APIs.
+
+        emit_prepared_queries: true          # ✅ Generates prepared statement code for queries.
+                                              # More efficient (reuses compiled query plans in DB).
+
+        emit_interface: true                 # ✅ Generates an interface for all queries (e.g., `IStore`).
+                                              # Useful for dependency injection and mocking in tests.
+
+        emit_exact_table_names: false        # ✅ Controls struct naming.
+                                              # false → CamelCase names (e.g., `users` → `User`).
+                                              # true  → Keeps exact table names (e.g., `users` → `Users`).
+
+        emit_empty_slices: true              # ✅ For queries returning many rows:
+                                              # - true → returns `[]T{}` (empty slice) instead of `nil` when no rows.
+                                              # - false → returns `nil`.
+                                              # Prevents `nil` slice pitfalls when marshaling JSON.
