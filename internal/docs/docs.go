@@ -16,6 +16,70 @@ const docTemplate = `{
     "basePath": "{{.BasePath}}",
     "paths": {
         "/accounts": {
+            "get": {
+                "description": "Retrieve multiple accounts with pagination (limit \u0026 offset).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "accounts"
+                ],
+                "summary": "Get list of accounts",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Max number of accounts to return (min=5, max=30)",
+                        "name": "limit",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of accounts to skip (min=0)",
+                        "name": "offset",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.AccountListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "Create a new bank account with owner and currency",
                 "consumes": [
@@ -145,6 +209,20 @@ const docTemplate = `{
                 },
                 "owner": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.AccountListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/db.Account"
+                    }
+                },
+                "total_data": {
+                    "type": "integer"
                 }
             }
         },

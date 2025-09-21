@@ -16,6 +16,7 @@ import (
 type IAccountHandler interface {
 	CreateAccount(c *gin.Context)
 	GetAccount(c *gin.Context)
+	GetAccounts(c *gin.Context)
 	// GetUserByID(c *gin.Context)
 	// GetAllUsers(c *gin.Context)
 	// UpdateUser(c *gin.Context)
@@ -101,7 +102,43 @@ func (handler *accountHandler) GetAccount(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, gin.H{"data": account})
+	ctx.JSON(http.StatusOK, gin.H{"data": account})
+}
+
+// GetAccounts godoc
+// @Summary Get list of accounts
+// @Description Retrieve multiple accounts with pagination (limit & offset).
+// @Tags accounts
+// @Accept json
+// @Produce json
+// @Param limit query int true "Max number of accounts to return (min=5, max=30)"
+// @Param offset query int true "Number of accounts to skip (min=0)"
+// @Success 200 {object} dto.AccountListResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /accounts [get]
+func (handler *accountHandler) GetAccounts(ctx *gin.Context) {
+	var req dto.GetAccountsRequest
+	// var req models.CreateUserRequest
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		ctx.Error(err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	accounts, err := handler.service.GetAccounts(ctx, req)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "accounts not found"})
+			return
+		}
+		ctx.Error(err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get accounts"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": accounts.Accounts, "total_data": accounts.TotalCount})
 }
 
 // // GetUserByID godoc

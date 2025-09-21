@@ -6,6 +6,7 @@ import (
 	// "github.com/chinsiang99/simple-bank-go-project/internal/api/handlers"
 	db "github.com/chinsiang99/simple-bank-go-project/internal/database/sqlc"
 	"github.com/chinsiang99/simple-bank-go-project/internal/dto"
+	"golang.org/x/sync/errgroup"
 )
 
 type IAccountService interface {
@@ -16,6 +17,7 @@ type IAccountService interface {
 	// DeleteUser(id uint) error
 	CreateAccount(ctx context.Context, req dto.CreateAccountRequest) (db.Account, error)
 	GetAccount(ctx context.Context, id int64) (db.Account, error)
+	GetAccounts(ctx context.Context, req dto.GetAccountsRequest) (dto.GetAccountsResponse, error)
 }
 
 type accountService struct {
@@ -39,6 +41,48 @@ func (s *accountService) CreateAccount(ctx context.Context, req dto.CreateAccoun
 func (s *accountService) GetAccount(ctx context.Context, id int64) (db.Account, error) {
 	account, err := s.store.GetAccount(ctx, id)
 	return account, err
+}
+
+func (s *accountService) GetAccounts(ctx context.Context, req dto.GetAccountsRequest) (dto.GetAccountsResponse, error) {
+	// without count
+	// account, err := s.store.ListAccounts(ctx, db.ListAccountsParams{
+	// 	Limit:  req.Limit,
+	// 	Offset: req.Offset,
+	// })
+	// return account, err
+	var (
+		accounts []db.Account
+		total    int64
+	)
+
+	g, ctx := errgroup.WithContext(ctx)
+
+	// Fetch accounts
+	g.Go(func() error {
+		var err error
+		accounts, err = s.store.ListAccounts(ctx, db.ListAccountsParams{
+			Limit:  req.Limit,
+			Offset: req.Offset,
+		})
+		return err
+	})
+
+	// Fetch count
+	g.Go(func() error {
+		var err error
+		total, err = s.store.GetAccountsCount(ctx)
+		return err
+	})
+
+	// Wait for both
+	if err := g.Wait(); err != nil {
+		return dto.GetAccountsResponse{}, err
+	}
+
+	return dto.GetAccountsResponse{
+		Accounts:   accounts,
+		TotalCount: total,
+	}, nil
 }
 
 // func (s *userService) GetUserByID(id uint) (*models.User, error) {

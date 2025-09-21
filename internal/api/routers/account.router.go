@@ -10,6 +10,7 @@ func RegisterAccountRoutes(router *gin.Engine, handler handlers.IAccountHandler)
 	{
 		users.POST("", handler.CreateAccount)
 		users.GET("/:id", handler.GetAccount)
+		users.GET("", handler.GetAccounts)
 		// users.GET("", handler.GetAllUsers)
 		// users.GET("/:id", handler.GetUserByID)
 		// users.PUT("/:id", handler.UpdateUser)

@@ -13,6 +13,15 @@ definitions:
       owner:
         type: string
     type: object
+  dto.AccountListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/db.Account'
+        type: array
+      total_data:
+        type: integer
+    type: object
   dto.CreateAccountRequest:
     properties:
       currency:
@@ -34,6 +43,49 @@ info:
   version: "1.0"
 paths:
   /accounts:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve multiple accounts with pagination (limit & offset).
+      parameters:
+      - description: Max number of accounts to return (min=5, max=30)
+        in: query
+        name: limit
+        required: true
+        type: integer
+      - description: Number of accounts to skip (min=0)
+        in: query
+        name: offset
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.AccountListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get list of accounts
+      tags:
+      - accounts
     post:
       consumes:
       - application/json

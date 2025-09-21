@@ -30,3 +30,6 @@ UPDATE accounts
 SET balance = balance + sqlc.arg(amount)
 WHERE id = sqlc.arg(id)
 RETURNING *;
+
+-- name: GetAccountsCount :one
+SELECT COUNT(*) FROM accounts;
